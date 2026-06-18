@@ -1,39 +1,37 @@
-import requests
-import json
 
-def rastrear_tornados_usa():
-    print("==================================================")
-    print(" INICIANDO MOTOR DE PREDICCIÓN TORNADO-PREDICTOR ")
-    print(" Conectando con Radares e Inteligencia de EE.UU...")
-    print("==================================================")
-    
-    # Conexión directa a la API oficial del Servicio Meteorológico de EE.UU.
-    url = "https://api.weather.gov/alerts/active?event=Tornado%20Warning"
-    headers = {'User-Agent': '(tornado-predictor-mvp, mario-data-tech)'}
+import streamlit as st
+import requests
+
+# Set page layout
+st.set_page_config(page_title="Tornado Tracker", layout="wide")
+
+st.title("🌪️ Tornado Predictor MVP")
+
+def get_tornado_data():
+    # URL oficial del National Weather Service de EE.UU.
+    url = "https://api.weather.gov/alerts/active?area=US"
+    headers = {'User-Agent': 'TornadoPredictorApp (my-email@example.com)'}
     
     try:
-        respuesta = requests.get(url, headers=headers)
-        if respuesta.status_code == 200:
-            datos = respuesta.json()
-            alertas = datos.get('features', [])
-            
-            print(f"\n[SISTEMA OK] Conexión exitosa con el servidor meteorológico.")
-            print(f"[ALERTA] Tornados activos detectados en este momento: {len(alertas)}")
-            
-            # Aquí procesamos los datos crudos para tu modelo de negocio B2B
-            for alerta in alertas[:3]: # Muestra las primeras 3 alertas como prueba
-                propiedades = alerta.get('properties', {})
-                area = propiedades.get('areaDesc', 'Área no especificada')
-                detalles = propiedades.get('headline', 'Sin detalles')
-                print(f"\n📍 Ubicación: {area}\n⚠️ Detalle: {detalles}")
-                
-            return alertas
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('features', [])
         else:
-            print(f"\n[ERROR] Error de respuesta del radar comercial: Código {respuesta.status_code}")
-            return []
+            return None
     except Exception as e:
-        print(f"\n[ERROR] Falla crítica de conexión: {e}")
-        return []
+        return None
 
-if __name__ == "__main__":
-    rastrear_tornados_usa()
+# App logic
+if st.button("Buscar Alertas de Tornado"):
+    alerts = get_tornado_data()
+    
+    if alerts:
+        st.success(f"Se han encontrado {len(alerts)} alertas activas.")
+        for alert in alerts[:5]:  # Muestra las primeras 5
+            properties = alert.get('properties', {})
+            st.write(f"**Ubicación:** {properties.get('areaDesc')}")
+            st.write(f"**Evento:** {properties.get('event')}")
+            st.write("---")
+    else:
+        st.error("No se pudieron obtener los datos o no hay alertas.")
