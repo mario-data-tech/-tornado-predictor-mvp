@@ -7,8 +7,8 @@ st.title("🌪️ Tornado Prediction MVP")
 def get_tornado_data():
     url = "https://api.weather.gov/alerts/active?area=US"
     headers = {'User-Agent': 'TornadoPredictorApp'}
-            try:
-                    response = requests.get(url, headers=headers)
+        try:
+             response = requests.get(url, headers=headers)
                             if response.status_code == 200:
                                         return response.json().get('features', [])
                                                 return []
