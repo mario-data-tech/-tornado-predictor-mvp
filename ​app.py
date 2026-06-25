@@ -4,210 +4,184 @@ import pandas as pd
 import numpy as np
 import folium
 from streamlit_folium import st_folium
+import json
 
 st.set_page_config(
-    page_title="Policy Optimizer | Fleet Rerouting Engine",
-    page_icon="🚚",
+    page_title="Decision Intelligence Layer | Climate Risk",
+    page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-st.title("🛡️ Mario Data Tech | Policy Optimizer")
-st.caption("Motor corporativo de decisión para desvío de flota con trazabilidad matemática completa.")
+st.title("🛡️ Mario Data Tech | Decision Intelligence Layer")
+st.caption("Climate Risk Exposure Engine & Policy-Driven Execution Framework.")
 st.divider()
 
-# --- PERSISTENCIA DE LA FLOTA (Coordenadas reales en USA) ---
+# --- 1. CAPA DE PERSISTENCIA DE DATOS (DATA LAYER) ---
 if "fleet" not in st.session_state:
     st.session_state.fleet = pd.DataFrame([
         {
-            "Truck": "🚚 Truck-01 (Kansas)",
-            "Latitude": 38.9637,    # Cono de impacto inminente
+            "Truck": "Truck-01 (Kansas)",
+            "Latitude": 38.9637,
             "Longitude": -95.2600,
-            "P": 0.90,              # Tornado Warning Activo
-            "E": 150000.0,          # Electrónica de alta gama
-            "Distance_km": 12.5,
+            "P": 0.90,
+            "E": 150000.0,
             "Base_Rerouting_Cost_USD": 8000.0,
             "SLA_Penalty_USD": 4000.0,
         },
         {
-            "Truck": "🚚 Truck-02 (Texas)",
-            "Latitude": 31.9686,    # Zona segura
+            "Truck": "Truck-02 (Texas)",
+            "Latitude": 31.9686,
             "Longitude": -99.9018,
-            "P": 0.00,
-            "E": 35000.0,           # Repuestos industriales
-            "Distance_km": 480.2,
+            "P": 0.10,
+            "E": 35000.0,
             "Base_Rerouting_Cost_USD": 3000.0,
             "SLA_Penalty_USD": 1000.0,
         },
         {
-            "Truck": "🚚 Truck-03 (Illinois)",
-            "Latitude": 40.6331,    # Zona segura
+            "Truck": "Truck-03 (Illinois)",
+            "Latitude": 40.6331,
             "Longitude": -89.3985,
-            "P": 0.00,
-            "E": 12000.0,           # Textiles
-            "Distance_km": 350.1,
+            "P": 0.05,
+            "E": 12000.0,
             "Base_Rerouting_Cost_USD": 1500.0,
             "SLA_Penalty_USD": 500.0,
         },
     ])
 
 if "weather" not in st.session_state:
-    st.session_state.weather = {
-        "S": 0.80  # Severidad por defecto para tornado severo
-    }
+    st.session_state.weather = {"S": 0.80}
 
-# --- MOTOR DE RIESGO Y OPTIMIZACIÓN FINANCIERA ---
-def calcular_riesgo_flota(df: pd.DataFrame, s_factor: float) -> pd.DataFrame:
+# --- 2. CAPA DEL MOTOR DE OPTIMIZACIÓN (POLICY ENGINE) ---
+def ejecutar_policy_engine(df: pd.DataFrame, s_factor: float) -> pd.DataFrame:
     out = df.copy()
     out["S"] = float(s_factor)
     
-    # Pérdida Esperada individual (Expected Loss)
-    out["EL_individual"] = out["P"] * out["E"] * out["S"]
+    # Escenario Contrafáctico A: Línea de Base (No hacer nada)
+    out["Baseline_Expected_Loss_USD"] = out["P"] * out["E"] * out["S"]
     
-    # Función de Costo de Desvío Compuesta
-    out["Costo_Total_Desvio"] = out["Base_Rerouting_Cost_USD"] + out["SLA_Penalty_USD"]
+    # Costo de Mitigación Compuesto (Restricciones operativas)
+    out["Mitigation_Cost_USD"] = out["Base_Rerouting_Cost_USD"] + out["SLA_Penalty_USD"]
     
-    # REGLA DE ORO OPERATIVA: Reroute SOLO si el riesgo financiero supera el costo logístico
-    out["Decision"] = np.where(out["EL_individual"] > out["Costo_Total_Desvio"], "Reroute", "Normal")
+    # REGLA DE POLÍTICA COMPUESTA (Policy Rule ID: CLIM_RISK_v1)
+    out["Decision"] = np.where(out["Baseline_Expected_Loss_USD"] > out["Mitigation_Cost_USD"], "REROUTE", "HOLD_ROUTE")
     
-    # Cálculo de Retorno y Costos Asumidos
-    out["Ahorro_Neto_Realizado"] = np.where(
-        out["Decision"] == "Reroute",
-        out["EL_individual"] - out["Costo_Total_Desvio"],
-        0.0
-    )
-    out["Costo_Operativo_Asumido"] = np.where(
-        out["Decision"] == "Reroute",
-        out["Costo_Total_Desvio"],
+    # Escenario Contrafáctico B: Mitigación Activa
+    out["Post_Mitigation_Loss_USD"] = np.where(out["Decision"] == "REROUTE", 0.0, out["Baseline_Expected_Loss_USD"])
+    out["Costo_Operativo_Asumido"] = np.where(out["Decision"] == "REROUTE", out["Mitigation_Cost_USD"], 0.0)
+    
+    # Impacto Neto Realizado (Ahorro Auditables para el CFO)
+    out["Net_Financial_Savings_USD"] = np.where(
+        out["Decision"] == "REROUTE",
+        out["Baseline_Expected_Loss_USD"] - out["Mitigation_Cost_USD"],
         0.0
     )
     return out
 
 # =====================================================================
-# CAPA 1: MODEL INPUTS (Panel de Control e Ingesta de Datos)
+# INTERFAZ DE USUARIO EN 3 CAPAS (UI LAYER)
 # =====================================================================
+
+# --- CAPA 1: MODEL INPUTS (Sidebar) ---
 with st.sidebar:
     st.header("🎛️ Capa 1: Model Inputs")
-    st.markdown("Ajuste de parámetros meteorológicos y financieros en tiempo real.")
+    st.markdown("Variables exógenas y parámetros financieros del modelo.")
     
-    s_value = st.slider("Severidad del Evento (S)", 0.0, 1.0, float(st.session_state.weather["S"]), 0.01)
+    s_value = st.slider("Severidad Climática (S)", 0.0, 1.0, float(st.session_state.weather["S"]), 0.01)
     st.session_state.weather["S"] = s_value
 
-    st.subheader("📝 Parámetros de Flota")
-    st.caption("Editá los valores directamente en la tabla si cambian los costos o la carga:")
-    
+    st.subheader("📝 Parámetros Operativos de Flota")
     editable = st.data_editor(
-        st.session_state.fleet[[
-            "Truck",
-            "P",
-            "E",
-            "Base_Rerouting_Cost_USD",
-            "SLA_Penalty_USD",
-            "Latitude",
-            "Longitude"
-        ]],
+        st.session_state.fleet[["Truck", "P", "E", "Base_Rerouting_Cost_USD", "SLA_Penalty_USD", "Latitude", "Longitude"]],
         use_container_width=True,
         num_rows="fixed",
         hide_index=True,
         disabled=["Truck"]
     )
-
 st.session_state.fleet.update(editable)
 
-# Ejecución del motor con los datos actualizados
-engine_df = calcular_riesgo_flota(st.session_state.fleet, st.session_state.weather["S"])
+# Ejecución del motor central
+engine_df = ejecutar_policy_engine(st.session_state.fleet, st.session_state.weather["S"])
 
-# =====================================================================
-# CAPA 2: ENGINE OUTPUTS (Trazabilidad y Desglose Matemático)
-# =====================================================================
-st.header("🧠 Capa 2: Engine Outputs")
-st.markdown("Desglose auditable del riesgo por unidad. La transparencia que exigen los gerentes de riesgo.")
+# --- CAPA 2: ENGINE OUTPUTS (Trazabilidad y Modelado Contrafáctico) ---
+st.header("🧠 Capa 2: Engine Outputs & Counterfactual Simulation")
+st.markdown("Simulación auditable de escenarios para control financiero y de seguros (Mitigación vs. Status Quo).")
 
+# Armamos la tabla contrafáctica que exigió el feedback
 st.dataframe(
     engine_df[[
         "Truck",
-        "P",
-        "E",
-        "S",
-        "EL_individual",
-        "Costo_Total_Desvio",
+        "Baseline_Expected_Loss_USD",
+        "Mitigation_Cost_USD",
         "Decision",
-        "Ahorro_Neto_Realizado"
+        "Post_Mitigation_Loss_USD",
+        "Net_Financial_Savings_USD"
     ]].style.format({
-        "P": "{:.2f}",
-        "E": "${:,.2f}",
-        "S": "{:.2f}",
-        "EL_individual": "${:,.2f}",
-        "Costo_Total_Desvio": "${:,.2f}",
-        "Ahorro_Neto_Realizado": "${:,.2f}"
+        "Baseline_Expected_Loss_USD": "${:,.2f}",
+        "Mitigation_Cost_USD": "${:,.2f}",
+        "Post_Mitigation_Loss_USD": "${:,.2f}",
+        "Net_Financial_Savings_USD": "${:,.2f}"
     }),
     use_container_width=True,
     hide_index=True
 )
 
-# Métricas agregadas de negocio
-total_rerouted = int((engine_df["Decision"] == "Reroute").sum())
+# Métricas consolidadas de impacto financiero
+total_rerouted = int((engine_df["Decision"] == "REROUTE").sum())
 total_operational_cost = float(engine_df["Costo_Operativo_Asumido"].sum())
-net_savings = float(engine_df["Ahorro_Neto_Realizado"].sum())
+net_savings = float(engine_df["Net_Financial_Savings_USD"].sum())
 roi = (net_savings / total_operational_cost * 100.0) if total_operational_cost > 0 else 0.0
 
-# =====================================================================
-# CAPA 3: DECISION LAYER (Optimización y Acciones Críticas)
-# =====================================================================
-st.header("📡 Capa 3: Decision Layer")
-st.markdown("Métricas clave de ROI y ruteo geoespacial optimizado bajo restricciones.")
+# --- CAPA 3: DECISION & EXECUTION LAYER (Objetos de Decisión Autónomos) ---
+st.header("📡 Capa 3: Policy-Driven Decision & Audit Logs")
+st.markdown("Monitoreo geoespacial, órdenes de despacho y objetos de decisión ledger-ready.")
 
-col1, col2, col3 = st.columns(3)
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.metric("Camiones Desviados (Reroute)", total_rerouted)
+with c2:
+    st.metric("Costo Operativo Asumido", f"${total_operational_cost:,.2f}")
+with c3:
+    st.metric("ROI / Impacto Financiero Neto", f"${net_savings:,.2f}", f"{roi:.2f}% Evitado")
 
-with col1:
-    st.metric("Camiones Desviados", total_rerouted, help="Unidades cuya orden automática fue cambiada a Reroute.")
-
-with col2:
-    st.metric("Costo Operativo Asumido", f"${total_operational_cost:,.2f}", help="Suma de combustible adicional y penalizaciones de SLA por desvío.")
-
-with col3:
-    st.metric("ROI / Riesgo Neto Evitado", f"${net_savings:,.2f}", f"{roi:.2f}% de Retorno", help="Capital financiero neto salvado tras descontar los costos del desvío.")
-
-# Construcción del mapa interactivo profesional (Folium)
-st.subheader("🗺️ Monitoreo de Rutas y Alertas")
-map_center = [36.0000, -94.0000] # Centro estratégico de la visualización en USA
+# Mapa Logístico
+map_center = [36.0000, -94.0000]
 m = folium.Map(location=map_center, zoom_start=5, tiles="CartoDB dark_matter")
 
 for _, row in engine_df.iterrows():
-    # Rojo para desvío mandatorio, verde para mantener ruta normal
-    color = "#FF4B4B" if row["Decision"] == "Reroute" else "#00D48A"
-    
-    popup_text = f"""
-    <div style='font-family: Arial, sans-serif; font-size: 12px; min-width: 200px;'>
-        <b>{row['Truck']}</b><br>
-        <hr style='margin: 4px 0;'>
-        <b>Decisión:</b> <span style='color:{color}; font-weight:bold;'>{row['Decision']}</span><br>
-        <b>Pérdida Esperada (EL):</b> ${row['EL_individual']:,.2f}<br>
-        <b>Costo de Desvío:</b> ${row['Costo_Total_Desvio']:,.2f}<br>
-        <b>Ahorro Generado:</b> ${row['Ahorro_Neto_Realizado']:,.2f}
-    </div>
-    """
-    
+    color = "#FF4B4B" if row["Decision"] == "REROUTE" else "#00D48A"
     folium.CircleMarker(
         location=[row["Latitude"], row["Longitude"]],
-        radius=9,
-        color=color,
-        fill=True,
-        fill_color=color,
-        fill_opacity=0.8,
-        popup=folium.Popup(popup_text, max_width=300)
+        radius=9, color=color, fill=True, fill_color=color, fill_opacity=0.8,
+        popup=f"<b>{row['Truck']}</b><br>Decisión: {row['Decision']}"
     ).add_to(m)
 
-st_folium(m, width="100%", height=450, returned_objects=[])
+st_folium(m, width="100%", height=400, returned_objects=[])
 
-# Alertas Críticas Dinámicas
-st.subheader("🚨 Órdenes de Despacho Automatizadas")
+# Sección de Auditoría Avanzada con los Objetos de Decisión JSON
+st.subheader("🕵️‍♂️ Ledger Audit Trail: Objetos de Decisión Generados")
+st.markdown("Estructura de datos exportable e inmutable para auditoría de cumplimiento corporativo:")
+
 for _, row in engine_df.iterrows():
-    if row["Decision"] == "Reroute":
-        st.error(f"**{row['Truck']}**: Ejecutar desvío inmediato hacia la ruta alternativa este. Riesgo climático crítico superó los costos logísticos por **${row['Ahorro_Neto_Realizado']:,.2f} USD**.")
-    else:
-        st.success(f"**{row['Truck']}**: Mantener ruta original activa. El riesgo financiero actual (${row['EL_individual']:,.2f} USD) no justifica asumir costos extras de desvío.")
+    # Construcción exacta del Objeto de Decisión intermedio solicitado
+    decision_object = {
+        "truck_id": row["Truck"],
+        "decision": row["Decision"],
+        "confidence_threshold_met": True if row["Decision"] == "REROUTE" else False,
+        "cost_reroute_total": float(row["Mitigation_Cost_USD"]),
+        "expected_loss_if_no_action": float(row["Baseline_Expected_Loss_USD"]),
+        "policy_rule_id": "RULE_CLIM_RISK_EL_GT_MITIGATION_v2",
+        "explanation_payload": [
+            f"Severidad climática S calculada en {row['S']:.2f}.",
+            f"Probabilidad de evento P={row['P']:.2f} con exposición comercial E=${row['E']:,.2f}.",
+            "Optimización: El riesgo financiero excede los costos operativos combinados de desvío y penalizaciones de SLA." if row["Decision"] == "REROUTE" else "Optimización: Mantener ruta es el escenario óptimo. El costo de desvío supera el riesgo financiero estimado."
+        ]
+    }
+    
+    # Mostramos los JSON en colapsables elegantes por camión
+    estado_emoji = "🔴" if row["Decision"] == "REROUTE" else "🟢"
+    with st.expander(f"{estado_emoji} Audit Log: {row['Truck']} — State: {row['Decision']}"):
+        st.json(decision_object)
 
-st.markdown("---")
-st.caption("Mario Data Tech Enterprise Engine v2.0 — Policy Optimizer Module. Lógica matemática de optimización bajo restricciones logísticas.")
-
+st.divider()
+st.caption("Mario Data Tech | Decision Intelligence Engine v3.0 Enterprise — Compliance Ledger Ready.")
