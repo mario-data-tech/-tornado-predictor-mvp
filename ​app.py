@@ -93,7 +93,7 @@ with st.sidebar:
     st.subheader("📝 Parámetros Operativos de Flota")
     editable = st.data_editor(
         st.session_state.fleet[["Truck", "P", "E", "Base_Rerouting_Cost_USD", "SLA_Penalty_USD", "Latitude", "Longitude"]],
-        use_container_width=True,
+        width='stretch',
         num_rows="fixed",
         hide_index=True,
         disabled=["Truck"]
@@ -122,7 +122,7 @@ st.dataframe(
         "Post_Mitigation_Loss_USD": "${:,.2f}",
         "Net_Financial_Savings_USD": "${:,.2f}"
     }),
-    use_container_width=True,
+    width='stretch',
     hide_index=True
 )
 
